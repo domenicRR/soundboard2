@@ -1,0 +1,726 @@
+<Window x:Class="CS2Soundboard.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:CS2Soundboard.ViewModels"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance Type=vm:MainViewModel}"
+        Title="CS2 Soundboard" Width="1120" Height="780" MinWidth="860" MinHeight="580"
+        WindowStartupLocation="CenterScreen"
+        Style="{StaticResource AppWindow}">
+
+    <DockPanel>
+        <!-- ===== Routing status banner (always visible) ===== -->
+        <Border DockPanel.Dock="Top" Padding="16,10" Background="{Binding RoutingLevel, Converter={StaticResource LevelBrush}}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Ellipse Width="10" Height="10" Fill="White" Margin="0,0,10,0" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding RoutingHeadline}" Foreground="White" FontWeight="SemiBold" FontSize="14"
+                               TextWrapping="Wrap" MaxWidth="700" VerticalAlignment="Center" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <ToggleButton Style="{StaticResource MuteToggle}" IsChecked="{Binding MicMuted}" ToolTip="Mute your voice in CS2 (sound effects keep playing)">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock FontFamily="{StaticResource IconFont}" Text="&#xE720;" Margin="0,0,6,0" VerticalAlignment="Center" />
+                            <TextBlock Text="Mute mic" />
+                        </StackPanel>
+                    </ToggleButton>
+                    <ToggleButton Style="{StaticResource MuteToggle}" IsChecked="{Binding SoundboardMuted}" ToolTip="Mute sound effects (your voice keeps going through)">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock FontFamily="{StaticResource IconFont}" Text="&#xE767;" Margin="0,0,6,0" VerticalAlignment="Center" />
+                            <TextBlock Text="Mute soundboard" />
+                        </StackPanel>
+                    </ToggleButton>
+                    <Button Style="{StaticResource DangerButton}" Command="{Binding StopAllCommand}" Margin="0" ToolTip="Stop all sounds">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock FontFamily="{StaticResource IconFont}" Text="&#xE71A;" Margin="0,0,6,0" VerticalAlignment="Center" />
+                            <TextBlock Text="Stop all" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ===== Meters strip ===== -->
+        <Border DockPanel.Dock="Top" Background="White" BorderBrush="{StaticResource BorderBrushLight}" BorderThickness="0,0,0,1" Padding="16,8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" MaxWidth="260" />
+                    <ColumnDefinition Width="60" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" MaxWidth="260" />
+                    <ColumnDefinition Width="60" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="Physical mic" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{StaticResource SubtleTextBrush}" />
+                <ProgressBar Grid.Column="1" Style="{StaticResource Meter}" Value="{Binding MicLevel, Mode=OneWay}" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="2" Text="{Binding MicLevelText}" Margin="8,0" VerticalAlignment="Center" FontSize="11" Foreground="{StaticResource SubtleTextBrush}" />
+                <TextBlock Grid.Column="3" Text="Mixed output" VerticalAlignment="Center" Margin="8,0,8,0" Foreground="{StaticResource SubtleTextBrush}" />
+                <ProgressBar Grid.Column="4" Style="{StaticResource Meter}" Value="{Binding OutputLevel, Mode=OneWay}" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="5" Text="{Binding OutputLevelText}" Margin="8,0" VerticalAlignment="Center" FontSize="11" Foreground="{StaticResource SubtleTextBrush}" />
+                <TextBlock Grid.Column="6" VerticalAlignment="Center" HorizontalAlignment="Right" TextTrimming="CharacterEllipsis">
+                    <Run Text="Now playing: " Foreground="{StaticResource SubtleTextBrush}" /><Run Text="{Binding NowPlaying, Mode=OneWay}" FontWeight="SemiBold" />
+                </TextBlock>
+            </Grid>
+        </Border>
+
+        <!-- ===== Last message bar ===== -->
+        <Border DockPanel.Dock="Bottom" Background="White" BorderBrush="{StaticResource BorderBrushLight}" BorderThickness="0,1,0,0" Padding="16,6">
+            <TextBlock Text="{Binding LastMessage}" Foreground="{Binding LastMessageLevel, Converter={StaticResource LevelBrush}}" TextTrimming="CharacterEllipsis"
+                       ToolTip="{Binding LastMessage}" />
+        </Border>
+
+        <TabControl Margin="12" Background="Transparent" BorderThickness="0">
+
+            <!-- ================= SOUNDBOARD ================= -->
+            <TabItem Header="Soundboard">
+                <Grid Margin="0,12,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Sound folder" VerticalAlignment="Center" FontWeight="SemiBold" Margin="0,0,10,0" />
+                                <TextBox Grid.Column="1" Text="{Binding SoundDirectory, Mode=OneWay}" IsReadOnly="True" VerticalContentAlignment="Center" Padding="6,4" Margin="0,0,8,0" />
+                                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                                    <Button Style="{StaticResource PrimaryButton}" Command="{Binding BrowseFolderCommand}">Choose folder...</Button>
+                                    <Button Command="{Binding RescanCommand}" ToolTip="Scan the folder again for added, changed or removed files">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock FontFamily="{StaticResource IconFont}" Text="&#xE72C;" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                            <TextBlock Text="Rescan" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Command="{Binding OpenFolderCommand}" Margin="0" ToolTip="Open the folder in Explorer">
+                                        <TextBlock FontFamily="{StaticResource IconFont}" Text="&#xE838;" />
+                                    </Button>
+                                </StackPanel>
+                            </Grid>
+                            <Grid Margin="0,10,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="260" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid>
+                                    <TextBox x:Name="SearchBox" Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged}" Padding="26,4,6,4" VerticalContentAlignment="Center" />
+                                    <TextBlock FontFamily="{StaticResource IconFont}" Text="&#xE721;" Margin="8,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False" Foreground="{StaticResource SubtleTextBrush}" />
+                                    <TextBlock Text="Search sounds or hotkeys" Margin="28,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False" Foreground="#9CA3AF"
+                                               Visibility="{Binding Text.IsEmpty, ElementName=SearchBox, Converter={StaticResource BoolVis}}" />
+                                </Grid>
+                                <CheckBox Grid.Column="1" Margin="16,0,0,0" IsChecked="{Binding IncludeSubfolders}" Content="Include subfolders" />
+                                <CheckBox Grid.Column="2" Margin="16,0,0,0" IsChecked="{Binding AutoRescan}" Content="Rescan automatically on changes" />
+                                <TextBlock Grid.Column="3" Text="{Binding LibraryStatus}" Foreground="{Binding LibraryStatusLevel, Converter={StaticResource LevelBrush}}"
+                                           VerticalAlignment="Center" HorizontalAlignment="Right" TextTrimming="CharacterEllipsis" Margin="16,0,0,0" ToolTip="{Binding LibraryStatus}" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Row="1" Style="{StaticResource Card}" Padding="0">
+                        <DataGrid ItemsSource="{Binding SoundsView}" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
+                                  CanUserDeleteRows="False" CanUserResizeRows="False" HeadersVisibility="Column" SelectionMode="Single"
+                                  GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#F3F4F6" BorderThickness="0" Background="White"
+                                  RowHeight="46" EnableRowVirtualization="True" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling">
+                            <DataGrid.Resources>
+                                <Style TargetType="DataGridColumnHeader">
+                                    <Setter Property="Padding" Value="10,8" />
+                                    <Setter Property="Background" Value="#F9FAFB" />
+                                    <Setter Property="FontWeight" Value="SemiBold" />
+                                    <Setter Property="BorderBrush" Value="{StaticResource BorderBrushLight}" />
+                                    <Setter Property="BorderThickness" Value="0,0,0,1" />
+                                </Style>
+                                <Style TargetType="DataGridCell">
+                                    <Setter Property="BorderThickness" Value="0" />
+                                    <Setter Property="Padding" Value="6,0" />
+                                    <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+                                    <Style.Triggers>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter Property="Background" Value="#FFF7ED" />
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DataGrid.Resources>
+                            <DataGrid.Columns>
+                                <DataGridTemplateColumn Width="Auto">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="6,0,0,0">
+                                                <Button Command="{Binding DataContext.PlayCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}"
+                                                        ToolTip="Play into the CS2 microphone (click again to stop)" Style="{StaticResource IconButton}">
+                                                    <TextBlock>
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="Text" Value="&#xE768;" />
+                                                                <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsPlaying}" Value="True">
+                                                                        <Setter Property="Text" Value="&#xE71A;" />
+                                                                        <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                </Button>
+                                                <Button Command="{Binding DataContext.PreviewCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}"
+                                                        ToolTip="Preview on your own speakers/headphones only (not sent to CS2)" Style="{StaticResource IconButton}">
+                                                    <TextBlock>
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="Text" Value="&#xE7F6;" />
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsPreviewing}" Value="True">
+                                                                        <Setter Property="Text" Value="&#xE71A;" />
+                                                                        <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                </Button>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <DataGridTemplateColumn Header="Sound" Width="*" SortMemberPath="Name">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <StackPanel VerticalAlignment="Center" ToolTip="{Binding FullPath}">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                                    <TextBlock Text="{Binding Extension}" Margin="8,0,0,0" FontSize="10" Foreground="{StaticResource SubtleTextBrush}" VerticalAlignment="Center" />
+                                                    <TextBlock Text="{Binding Folder}" Margin="8,0,0,0" FontSize="11" Foreground="{StaticResource SubtleTextBrush}" VerticalAlignment="Center" />
+                                                </StackPanel>
+                                                <ProgressBar Style="{StaticResource ThinProgress}" Value="{Binding Progress, Mode=OneWay}" Margin="0,4,12,0"
+                                                             Visibility="{Binding IsPlaying, Converter={StaticResource BoolVis}}" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <DataGridTextColumn Header="Length" Binding="{Binding DurationText}" Width="70">
+                                    <DataGridTextColumn.ElementStyle>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="VerticalAlignment" Value="Center" />
+                                            <Setter Property="Foreground" Value="{StaticResource SubtleTextBrush}" />
+                                        </Style>
+                                    </DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>
+
+                                <DataGridTemplateColumn Header="Hotkey" Width="230" SortMemberPath="HotkeyText">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                <Button Command="{Binding DataContext.AssignHotkeyCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}"
+                                                        MinWidth="120" Padding="10,4" ToolTip="Click to assign a global hotkey">
+                                                    <TextBlock Text="{Binding HotkeyText}">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="FontWeight" Value="SemiBold" />
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding HasHotkey}" Value="False">
+                                                                        <Setter Property="FontWeight" Value="Normal" />
+                                                                        <Setter Property="Foreground" Value="#9CA3AF" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                </Button>
+                                                <Button Style="{StaticResource IconButton}" Content="&#xE711;" FontSize="10" ToolTip="Clear hotkey"
+                                                        Command="{Binding DataContext.ClearHotkeyCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}"
+                                                        Visibility="{Binding HasHotkey, Converter={StaticResource BoolVis}}" />
+                                                <TextBlock FontFamily="{StaticResource IconFont}" Text="&#xE7BA;" Foreground="{StaticResource DangerBrush}" VerticalAlignment="Center"
+                                                           Margin="4,0,0,0" ToolTip="{Binding HotkeyError}" Visibility="{Binding HasHotkeyError, Converter={StaticResource BoolVis}}" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <DataGridTemplateColumn Header="Status" Width="120" SortMemberPath="StatusText">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding StatusText}" ToolTip="{Binding StatusTooltip}" VerticalAlignment="Center">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Foreground" Value="{StaticResource SubtleTextBrush}" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsPlaying}" Value="True">
+                                                                <Setter Property="Foreground" Value="{StaticResource OkBrush}" />
+                                                                <Setter Property="FontWeight" Value="SemiBold" />
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding IsError}" Value="True">
+                                                                <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding IsMissing}" Value="True">
+                                                                <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
+                                                                <Setter Property="FontWeight" Value="SemiBold" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Border>
+
+                    <Border Grid.Row="2" Style="{StaticResource Card}" Margin="0">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="260" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Soundboard volume" VerticalAlignment="Center" Margin="0,0,10,0" FontWeight="SemiBold" />
+                            <Slider Grid.Column="1" Minimum="0" Maximum="200" Value="{Binding SoundboardVolumePercent}" VerticalAlignment="Center"
+                                    IsMoveToPointEnabled="True" SmallChange="1" LargeChange="10" />
+                            <TextBlock Grid.Column="2" Text="{Binding SoundboardVolumePercent, StringFormat={}{0:0}%}" Width="48" Margin="8,0" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="3" Style="{StaticResource Subtle}" VerticalAlignment="Center" Margin="12,0"
+                                       Text="Play sends the sound to CS2 (and to your speakers if enabled in Settings). The headphone button previews locally only." />
+                            <StackPanel Grid.Column="4" Orientation="Horizontal">
+                                <Button Command="{Binding StopCurrentCommand}" ToolTip="Stop the most recently started sound">Stop current</Button>
+                                <Button Style="{StaticResource DangerButton}" Command="{Binding StopAllCommand}" Margin="0">Stop all</Button>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <!-- ================= AUDIO MIXER ================= -->
+            <TabItem Header="Audio Mixer">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,12,4,0">
+                    <StackPanel>
+                        <!-- VB-CABLE missing -->
+                        <Border Style="{StaticResource Card}" Background="#FEF2F2" BorderBrush="#FCA5A5"
+                                Visibility="{Binding VbCableDetected, Converter={StaticResource InvBoolVis}}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource SectionTitle}" Foreground="{StaticResource DangerBrush}" Text="VB-CABLE (virtual audio cable) was not detected" />
+                                <TextBlock TextWrapping="Wrap">
+                                    CS2 can only receive the mixed audio through a virtual audio device. Install the free VB-CABLE driver
+                                    (download, extract, right-click VBCABLE_Setup_x64.exe &gt; Run as administrator &gt; Install Driver, then restart Windows),
+                                    then click "Refresh devices". See the Setup Guide tab for details.
+                                </TextBlock>
+                                <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                    <Button Style="{StaticResource PrimaryButton}" Command="{Binding OpenUrlCommand}" CommandParameter="https://vb-audio.com/Cable/">Open VB-CABLE website</Button>
+                                    <Button Command="{Binding RefreshDevicesCommand}">Refresh devices</Button>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Routing -->
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <Grid>
+                                    <TextBlock Style="{StaticResource SectionTitle}" Text="Audio routing" />
+                                    <CheckBox HorizontalAlignment="Right" IsChecked="{Binding RoutingEnabled}" FontWeight="SemiBold"
+                                              Content="Send microphone + soundboard to the virtual microphone" />
+                                </Grid>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="280" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    <StackPanel Margin="0,0,12,10">
+                                        <TextBlock Text="Physical microphone (input)" FontWeight="SemiBold" />
+                                        <TextBlock Style="{StaticResource Subtle}" FontSize="11" Text="Your real microphone. Never select the virtual cable here." />
+                                    </StackPanel>
+                                    <ComboBox Grid.Column="1" ItemsSource="{Binding CaptureDevices}" SelectedItem="{Binding SelectedMic}" Margin="0,0,0,10" VerticalAlignment="Center" />
+
+                                    <StackPanel Grid.Row="1" Margin="0,0,12,10">
+                                        <TextBlock Text="Virtual microphone output" FontWeight="SemiBold" />
+                                        <TextBlock Style="{StaticResource Subtle}" FontSize="11" Text="Playback side of the cable, e.g. &quot;CABLE Input&quot;." />
+                                    </StackPanel>
+                                    <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding OutputDevices}" SelectedItem="{Binding SelectedOutput}" Margin="0,0,0,10" VerticalAlignment="Center" />
+
+                                    <StackPanel Grid.Row="2" Margin="0,0,12,10">
+                                        <TextBlock Text="Listening device" FontWeight="SemiBold" />
+                                        <TextBlock Style="{StaticResource Subtle}" FontSize="11" Text="Your speakers/headphones, for previews and monitoring." />
+                                    </StackPanel>
+                                    <ComboBox Grid.Row="2" Grid.Column="1" ItemsSource="{Binding LocalDevices}" SelectedItem="{Binding SelectedLocal}" Margin="0,0,0,10" VerticalAlignment="Center" />
+
+                                    <StackPanel Grid.Row="3" Margin="0,0,12,0">
+                                        <TextBlock Text="Output buffer" FontWeight="SemiBold" />
+                                        <TextBlock Style="{StaticResource Subtle}" FontSize="11" Text="Lower = less delay. Raise it if you hear crackling." />
+                                    </StackPanel>
+                                    <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <ComboBox ItemsSource="{Binding LatencyOptions}" SelectedItem="{Binding OutputLatencyMs}" Width="90" ItemStringFormat="{}{0} ms" />
+                                        <Button Command="{Binding RefreshDevicesCommand}" Margin="16,0,8,0">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock FontFamily="{StaticResource IconFont}" Text="&#xE72C;" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                                <TextBlock Text="Refresh devices" />
+                                            </StackPanel>
+                                        </Button>
+                                        <Button Command="{Binding RestartAudioCommand}" ToolTip="Close and reopen all audio devices">Restart audio</Button>
+                                    </StackPanel>
+                                </Grid>
+
+                                <Border Background="#FFF7ED" BorderBrush="#FDBA74" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,14,0,0">
+                                    <TextBlock TextWrapping="Wrap">
+                                        <Run Text="In CS2, use this recording device as your microphone: " /><Run Text="{Binding VirtualRecordingName, Mode=OneWay}" FontWeight="Bold" />
+                                    </TextBlock>
+                                </Border>
+
+                                <Grid Margin="0,12,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="140" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Text="Virtual output" Foreground="{StaticResource SubtleTextBrush}" Margin="0,2" />
+                                    <TextBlock Grid.Column="1" Text="{Binding OutputStatus}" TextWrapping="Wrap" Margin="0,2" />
+                                    <TextBlock Grid.Row="1" Text="Microphone" Foreground="{StaticResource SubtleTextBrush}" Margin="0,2" />
+                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding MicStatus}" TextWrapping="Wrap" Margin="0,2" />
+                                    <TextBlock Grid.Row="2" Text="Listening device" Foreground="{StaticResource SubtleTextBrush}" Margin="0,2" />
+                                    <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding LocalStatus}" TextWrapping="Wrap" Margin="0,2" />
+                                </Grid>
+
+                                <Border Background="#FEF2F2" BorderBrush="#FCA5A5" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,12,0,0"
+                                        Visibility="{Binding HasIssues, Converter={StaticResource BoolVis}}">
+                                    <TextBlock Text="{Binding IssuesText}" TextWrapping="Wrap" Foreground="#991B1B" />
+                                </Border>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Levels -->
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource SectionTitle}" Text="Levels" />
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="200" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="60" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="36" />
+                                        <RowDefinition Height="36" />
+                                        <RowDefinition Height="36" />
+                                        <RowDefinition Height="36" />
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Text="Microphone gain" VerticalAlignment="Center" />
+                                    <Slider Grid.Column="1" Minimum="0" Maximum="400" Value="{Binding MicGainPercent}" VerticalAlignment="Center" IsMoveToPointEnabled="True" SmallChange="1" LargeChange="10" />
+                                    <TextBlock Grid.Column="2" Text="{Binding MicGainPercent, StringFormat={}{0:0}%}" VerticalAlignment="Center" Margin="8,0" />
+                                    <ToggleButton Grid.Column="3" Style="{StaticResource MuteToggle}" IsChecked="{Binding MicMuted}" Content="Mute mic" Margin="0" Width="140" />
+
+                                    <TextBlock Grid.Row="1" Text="Soundboard volume" VerticalAlignment="Center" />
+                                    <Slider Grid.Row="1" Grid.Column="1" Minimum="0" Maximum="200" Value="{Binding SoundboardVolumePercent}" VerticalAlignment="Center" IsMoveToPointEnabled="True" SmallChange="1" LargeChange="10" />
+                                    <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding SoundboardVolumePercent, StringFormat={}{0:0}%}" VerticalAlignment="Center" Margin="8,0" />
+                                    <ToggleButton Grid.Row="1" Grid.Column="3" Style="{StaticResource MuteToggle}" IsChecked="{Binding SoundboardMuted}" Content="Mute soundboard" Margin="0" Width="140" />
+
+                                    <TextBlock Grid.Row="2" Text="Master output (to CS2)" VerticalAlignment="Center" />
+                                    <Slider Grid.Row="2" Grid.Column="1" Minimum="0" Maximum="200" Value="{Binding MasterVolumePercent}" VerticalAlignment="Center" IsMoveToPointEnabled="True" SmallChange="1" LargeChange="10" />
+                                    <TextBlock Grid.Row="2" Grid.Column="2" Text="{Binding MasterVolumePercent, StringFormat={}{0:0}%}" VerticalAlignment="Center" Margin="8,0" />
+                                    <TextBlock Grid.Row="2" Grid.Column="3" Style="{StaticResource Subtle}" FontSize="11" VerticalAlignment="Center" Text="Limiter prevents clipping" Width="140" />
+
+                                    <TextBlock Grid.Row="3" Text="Listening volume (local only)" VerticalAlignment="Center" />
+                                    <Slider Grid.Row="3" Grid.Column="1" Minimum="0" Maximum="200" Value="{Binding LocalVolumePercent}" VerticalAlignment="Center" IsMoveToPointEnabled="True" SmallChange="1" LargeChange="10" />
+                                    <TextBlock Grid.Row="3" Grid.Column="2" Text="{Binding LocalVolumePercent, StringFormat={}{0:0}%}" VerticalAlignment="Center" Margin="8,0" />
+                                </Grid>
+
+                                <Separator Margin="0,12" />
+
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="200" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="60" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="30" />
+                                        <RowDefinition Height="30" />
+                                        <RowDefinition Height="30" />
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Text="Physical microphone input" VerticalAlignment="Center" />
+                                    <ProgressBar Grid.Column="1" Style="{StaticResource Meter}" Value="{Binding MicLevel, Mode=OneWay}" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="2" Text="{Binding MicLevelText}" VerticalAlignment="Center" Margin="8,0" FontSize="11" />
+                                    <TextBlock Grid.Column="3" Style="{StaticResource Subtle}" FontSize="11" VerticalAlignment="Center" Width="300" Text="Raw capture, before gain/mute" />
+
+                                    <TextBlock Grid.Row="1" Text="Mixed output (to virtual device)" VerticalAlignment="Center" />
+                                    <ProgressBar Grid.Row="1" Grid.Column="1" Style="{StaticResource Meter}" Value="{Binding OutputLevel, Mode=OneWay}" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding OutputLevelText}" VerticalAlignment="Center" Margin="8,0" FontSize="11" />
+                                    <TextBlock Grid.Row="1" Grid.Column="3" Style="{StaticResource Subtle}" FontSize="11" VerticalAlignment="Center" Width="300" Text="What the soundboard sends" />
+
+                                    <TextBlock Grid.Row="2" Text="Virtual recording (CS2 input)" VerticalAlignment="Center" FontWeight="SemiBold" />
+                                    <ProgressBar Grid.Row="2" Grid.Column="1" Style="{StaticResource Meter}" Value="{Binding ProbeLevel, Mode=OneWay}" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Row="2" Grid.Column="2" Text="{Binding ProbeLevelText}" VerticalAlignment="Center" Margin="8,0" FontSize="11" />
+                                    <CheckBox Grid.Row="2" Grid.Column="3" IsChecked="{Binding VerifyEnabled}" Width="300" Margin="0"
+                                              Content="Measure what CS2 actually receives" ToolTip="{Binding ProbeStatus}" />
+                                </Grid>
+                                <TextBlock Style="{StaticResource Subtle}" FontSize="11" Margin="0,6,0,0" Text="{Binding ProbeStatus}" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Test & diagnostics -->
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource SectionTitle}" Text="Test and diagnostics" />
+                                <TextBlock Style="{StaticResource Subtle}" Margin="0,0,0,10">
+                                    The self-test listens to the virtual recording device (the one CS2 uses) while it plays a tone through the soundboard,
+                                    then checks your voice. Speak continuously while it runs (about 4 seconds). Nothing leaves your computer.
+                                </TextBlock>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                    <Button Style="{StaticResource PrimaryButton}" Command="{Binding SelfTestCommand}">Run routing self-test</Button>
+                                    <Button Command="{Binding PlayTestToneCommand}" ToolTip="Plays a short 440 Hz tone into the virtual microphone">Play test tone into CS2 mic</Button>
+                                    <Button Command="{Binding OpenUrlCommand}" CommandParameter="mmsys.cpl">Windows Sound settings</Button>
+                                    <Button Command="{Binding OpenUrlCommand}" CommandParameter="ms-settings:privacy-microphone">Microphone privacy settings</Button>
+                                </StackPanel>
+                                <TextBox Style="{StaticResource Mono}" Text="{Binding SelfTestReport, Mode=OneWay}" MinHeight="60"
+                                         Visibility="{Binding SelfTestReport, Converter={StaticResource NotEmptyVis}}" Margin="0,0,0,12" />
+
+                                <Grid Margin="0,0,0,6">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="200" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Listen on my headphones to" VerticalAlignment="Center" />
+                                    <ComboBox Grid.Column="1" ItemsSource="{Binding MonitorModes}" SelectedItem="{Binding SelectedMonitorMode}" />
+                                </Grid>
+                                <TextBlock Style="{StaticResource Subtle}" FontSize="11" Margin="200,0,0,12">
+                                    "Physical microphone" only proves your mic works. "Virtual recording device" is the real check: it is exactly what CS2 hears.
+                                    Monitoring plays on your listening device only (never into the mix). Use headphones to avoid echo.
+                                </TextBlock>
+
+                                <Expander Header="Technical details" Margin="0,0,0,8">
+                                    <TextBox Style="{StaticResource Mono}" Text="{Binding Diagnostics, Mode=OneWay}" Margin="0,6,0,0" />
+                                </Expander>
+                                <Expander Header="Activity log" IsExpanded="True">
+                                    <ListBox ItemsSource="{Binding Events}" Height="160" Margin="0,6,0,0" FontFamily="Cascadia Mono, Consolas" FontSize="11"
+                                             BorderBrush="{StaticResource BorderBrushLight}" />
+                                </Expander>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ================= SETTINGS ================= -->
+            <TabItem Header="Settings">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,12,4,0">
+                    <StackPanel>
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource SectionTitle}" Text="Global hotkeys" />
+                                <TextBlock Style="{StaticResource Subtle}" Margin="0,0,0,10">
+                                    Hotkeys work system-wide, including while CS2 is focused and while this window is minimized to the tray.
+                                    Assign hotkeys for individual sounds on the Soundboard tab. Tip: use combinations CS2 does not use (e.g. Ctrl+Alt+number or numpad keys).
+                                    Holding a key down triggers only once.
+                                </TextBlock>
+                                <ItemsControl ItemsSource="{Binding CommandHotkeys}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid Margin="0,4">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="220" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel>
+                                                    <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" />
+                                                    <TextBlock Text="{Binding Description}" Style="{StaticResource Subtle}" FontSize="11" />
+                                                </StackPanel>
+                                                <Button Grid.Column="1" MinWidth="140" VerticalAlignment="Center" Content="{Binding HotkeyText}"
+                                                        Command="{Binding DataContext.AssignHotkeyCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}" />
+                                                <Button Grid.Column="2" Style="{StaticResource IconButton}" Content="&#xE711;" FontSize="10" VerticalAlignment="Center" ToolTip="Clear hotkey"
+                                                        Command="{Binding DataContext.ClearHotkeyCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}"
+                                                        Visibility="{Binding HasHotkey, Converter={StaticResource BoolVis}}" />
+                                                <TextBlock Grid.Column="3" Text="{Binding HotkeyError}" Foreground="{StaticResource DangerBrush}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="8,0,0,0" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource SectionTitle}" Text="Playback behavior" />
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="220" />
+                                        <ColumnDefinition Width="300" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="When a sound is triggered" VerticalAlignment="Center" />
+                                    <ComboBox Grid.Column="1" ItemsSource="{Binding PlaybackModes}" SelectedItem="{Binding SelectedPlaybackMode}" />
+                                    <TextBlock Grid.Column="2" Style="{StaticResource Subtle}" Margin="12,0,0,0" VerticalAlignment="Center" Text="{Binding SelectedPlaybackMode.Description}" />
+                                </Grid>
+                                <CheckBox Margin="0,10,0,4" IsChecked="{Binding RetriggerStops}"
+                                          Content="Pressing the hotkey of a sound that is already playing stops it (toggle)" />
+                                <CheckBox IsChecked="{Binding HearSoundsLocally}"
+                                          Content="Also play triggered sounds on my listening device, so I hear them too" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource SectionTitle}" Text="Sound library" />
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="220" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Sound folder" VerticalAlignment="Center" />
+                                    <TextBox Grid.Column="1" Text="{Binding SoundDirectory, Mode=OneWay}" IsReadOnly="True" Padding="6,4" Margin="0,0,8,0" />
+                                    <Button Grid.Column="2" Command="{Binding BrowseFolderCommand}" Margin="0">Choose folder...</Button>
+                                </Grid>
+                                <StackPanel Orientation="Horizontal" Margin="220,8,0,0">
+                                    <CheckBox IsChecked="{Binding IncludeSubfolders}" Content="Include subfolders" />
+                                    <CheckBox IsChecked="{Binding AutoRescan}" Content="Rescan automatically when files change" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource SectionTitle}" Text="Startup and window" />
+                                <CheckBox IsChecked="{Binding StartWithWindows}" Content="Start with Windows" />
+                                <CheckBox IsChecked="{Binding StartMinimized}" Content="Start minimized (to the tray)" />
+                                <CheckBox IsChecked="{Binding MinimizeToTray}" Content="Minimize to the system tray" />
+                                <CheckBox IsChecked="{Binding CloseToTray}" Content="Closing the window keeps the soundboard running in the tray" />
+                                <TextBlock Style="{StaticResource Subtle}" Margin="0,8,0,0"
+                                           Text="While minimized or in the tray, microphone passthrough and hotkeys keep working. Use Exit in the tray menu to quit completely." />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource SectionTitle}" Text="Settings storage" />
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding SettingsFilePath}" VerticalAlignment="Center" Margin="0,0,12,0" />
+                                    <Button Command="{Binding OpenSettingsFolderCommand}">Open folder</Button>
+                                </StackPanel>
+                                <TextBlock Style="{StaticResource Subtle}" Margin="0,6,0,0" Text="Settings are saved automatically. A log file is kept in the logs subfolder." />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ================= SETUP GUIDE ================= -->
+            <TabItem Header="Setup Guide">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,12,4,0">
+                    <StackPanel MaxWidth="900" HorizontalAlignment="Left">
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource SectionTitle}" Text="How it works" />
+                                <TextBlock TextWrapping="Wrap">
+                                    Physical microphone &#x2192; CS2 Soundboard (mixes in sound effects) &#x2192; CABLE Input (virtual playback device)
+                                    &#x2192; VB-CABLE driver &#x2192; CABLE Output (virtual recording device) &#x2192; CS2 microphone.
+                                    <LineBreak /><LineBreak />
+                                    Your voice is forwarded continuously, even when no sound is playing. You never need to switch microphones while gaming:
+                                    CS2 always uses CABLE Output, and this app always feeds it.
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource SectionTitle}" Text="1. Install VB-CABLE (one time)" />
+                                <TextBlock TextWrapping="Wrap">
+                                    1. Download the VB-CABLE driver pack from the official site (vb-audio.com/Cable).<LineBreak />
+                                    2. Extract the ZIP file completely.<LineBreak />
+                                    3. Right-click VBCABLE_Setup_x64.exe and choose "Run as administrator", then click "Install Driver".<LineBreak />
+                                    4. Restart Windows.<LineBreak />
+                                    5. In Windows Sound settings you should now see "CABLE Input" (Playback tab) and "CABLE Output" (Recording tab).<LineBreak />
+                                    6. Keep your real speakers/headphones as the Windows default playback device. Do not make CABLE Input the default playback device,
+                                    otherwise game sounds will be sent to your teammates.
+                                </TextBlock>
+                                <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                    <Button Command="{Binding OpenUrlCommand}" CommandParameter="https://vb-audio.com/Cable/">Open VB-CABLE website</Button>
+                                    <Button Command="{Binding OpenUrlCommand}" CommandParameter="mmsys.cpl">Open Windows Sound settings</Button>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource SectionTitle}" Text="2. Configure this app (Audio Mixer tab)" />
+                                <TextBlock TextWrapping="Wrap">
+                                    1. Physical microphone: select your real microphone (headset, USB mic, etc.). Selecting a microphone here does not inject audio into it;
+                                    the app captures it and forwards it to the virtual cable.<LineBreak />
+                                    2. Virtual microphone output: select "CABLE Input (VB-Audio Virtual Cable)".<LineBreak />
+                                    3. Listening device: your speakers or headphones (for previews and monitoring).<LineBreak />
+                                    4. Check that the banner at the top is green ("Live: microphone + soundboard").<LineBreak />
+                                    5. Choose a sound folder on the Soundboard tab and assign hotkeys.
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource SectionTitle}" Text="3. Configure CS2" />
+                                <TextBlock TextWrapping="Wrap">
+                                    1. In CS2 open Settings &gt; Audio and find the voice/microphone input device setting. Select "CABLE Output (VB-Audio Virtual Cable)".<LineBreak />
+                                    2. If your CS2 version has no input device selector (it uses the Windows default), open Windows Sound settings &gt; Recording,
+                                    right-click "CABLE Output" and choose "Set as Default Device" and "Set as Default Communication Device".<LineBreak />
+                                    3. Use CS2's microphone test (if available) and press a sound hotkey: you should see/hear both your voice and the sound.<LineBreak />
+                                    4. Push-to-talk still works as usual: CS2 only transmits while your voice key is held (or according to your voice settings).
+                                    Sound effects are only heard by teammates while CS2 is transmitting.<LineBreak />
+                                    5. Also check the Steam overlay/voice settings if you use Steam voice chat.
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource SectionTitle}" Text="4. Verify" />
+                                <TextBlock TextWrapping="Wrap">
+                                    1. Audio Mixer &gt; "Run routing self-test" while speaking. Both checks should report PASS.<LineBreak />
+                                    2. Tick "Measure what CS2 actually receives": the "Virtual recording" meter must move when you talk, even with no sound playing.<LineBreak />
+                                    3. Set "Listen on my headphones to" = "Virtual recording device" to hear exactly what CS2 receives (use headphones).<LineBreak />
+                                    4. Mute mic: the virtual recording meter drops while sounds still play. Mute soundboard: your voice still shows.
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource SectionTitle}" Text="Troubleshooting" />
+                                <TextBlock TextWrapping="Wrap">
+                                    <Bold>Banner is red / "virtual output not available":</Bold> VB-CABLE is not installed or is disabled. Install it, reboot, click Refresh devices.<LineBreak />
+                                    <Bold>Mic meter does not move:</Bold> wrong microphone selected, mic muted (hardware switch), or Windows Settings &gt; Privacy &amp; security &gt; Microphone blocks desktop apps.<LineBreak />
+                                    <Bold>"Feedback loop" error:</Bold> you selected CABLE Output as the physical microphone. Select your real microphone.<LineBreak />
+                                    <Bold>Teammates hear game sounds:</Bold> CABLE Input is your Windows default playback device. Set your speakers/headphones as default.<LineBreak />
+                                    <Bold>Crackling:</Bold> raise the output buffer (50-80 ms). Make sure CABLE Input/Output and your mic are not set to exclusive mode.<LineBreak />
+                                    <Bold>Hotkey does not work:</Bold> another app owns that combination (shown with a red icon). Pick another one.
+                                    If CS2 runs as administrator, global hotkeys still work, but avoid keys CS2 binds itself.<LineBreak />
+                                    <Bold>Echo when monitoring:</Bold> use headphones, or set monitoring to Off.
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+    </DockPanel>
+</Window>

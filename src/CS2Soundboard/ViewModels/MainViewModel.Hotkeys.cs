@@ -82,6 +82,12 @@ public sealed partial class MainViewModel
         var hk = result.Hotkey;
         if (hk == target.Hotkey && !target.HasHotkeyError()) return;
 
+        if (PushToTalkConflictFor(hk) is { } pttError)
+        {
+            _ui.ShowError("Hotkey uses your push-to-talk key", pttError);
+            return;
+        }
+
         var conflict = AllHotkeyTargets.FirstOrDefault(t => !ReferenceEquals(t, target) && t.Hotkey == hk);
         if (conflict != null)
         {

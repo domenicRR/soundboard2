@@ -18,6 +18,8 @@ public interface IUiServices
 {
     string? PickFolder(string? initialDirectory);
     HotkeyDialogResult CaptureHotkey(string title, Hotkey current);
+    /// <summary>Asks for the in-game push-to-talk key or mouse button. Null when cancelled.</summary>
+    PushToTalkKey? CapturePushToTalkKey(PushToTalkKey? current);
     bool Confirm(string title, string message);
     void ShowError(string title, string message);
     /// <summary>Non-blocking notice: a tray balloon when the window is hidden.</summary>
@@ -80,6 +82,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         InitLibraryCommands();
         InitMixerCommands();
         InitSettingsCommands();
+        InitPushToTalk();
     }
 
     public string SettingsFilePath => _store.FilePath;
@@ -118,6 +121,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         _uiTimer.Stop();
         _saveTimer.Stop();
         try { _playback.StopAll(); } catch { /* ignore */ }
+        try { _ptt.Dispose(); } catch (Exception ex) { Log.Error("Push-to-talk cleanup failed", ex); } // never leave the key held
         SaveNow();
         DisposeWatcher();
         _hotkeys.Pressed -= OnHotkeyPressed;
@@ -195,6 +199,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         {
             UpdateMeters();
             UpdatePlaybackStates();
+            UpdatePushToTalk();
             if (++_tick % 8 == 0) RefreshStatus();
         }
         catch (Exception ex)

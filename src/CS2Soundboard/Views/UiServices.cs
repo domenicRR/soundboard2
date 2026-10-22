@@ -39,6 +39,14 @@ public sealed class UiServices : IUiServices
         return dlg.ShowDialog() == true ? dlg.Result : new HotkeyDialogResult(true, false, Hotkey.None);
     }
 
+    public PushToTalkKey? CapturePushToTalkKey(PushToTalkKey? current)
+    {
+        var dlg = new PushToTalkKeyDialog(current);
+        if (Owner != null) dlg.Owner = Owner;
+        else dlg.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+        return dlg.ShowDialog() == true ? dlg.Result : null;
+    }
+
     public bool Confirm(string title, string message)
     {
         var r = Owner != null

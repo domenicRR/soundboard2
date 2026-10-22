@@ -358,7 +358,8 @@ public sealed partial class MainViewModel
         }
         try
         {
-            var error = await _playback.TriggerAsync(item.Key, item.FullPath, item.Name, _s.PlaybackMode, _s.RetriggerStops, _s.HearSoundsLocally);
+            var error = await WithPushToTalkAsync(item,
+                () => _playback.TriggerAsync(item.Key, item.FullPath, item.Name, _s.PlaybackMode, _s.RetriggerStops, _s.HearSoundsLocally));
             if (item.State == SoundState.Error) { item.State = SoundState.Ready; item.ErrorMessage = null; }
             Services.Log.Info($"Play \"{item.Name}\" ({(fromHotkey ? "hotkey" : "button")}): {(error ?? "sent to virtual microphone")}");
             if (error != null) AddEvent(error, StatusLevel.Error, notify: fromHotkey);

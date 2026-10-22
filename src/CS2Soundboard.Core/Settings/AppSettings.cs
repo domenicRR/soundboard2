@@ -64,6 +64,14 @@ public sealed class AppSettings
     public bool RetriggerStops { get; set; }
     public bool HearSoundsLocally { get; set; } = true;
 
+    // Automatic push-to-talk: hold the game's voice key while sounds play.
+    public bool AutoPushToTalk { get; set; }
+    /// <summary>Serialized <see cref="CS2Soundboard.Core.Hotkeys.PushToTalkKey"/>, e.g. "Key:V" or "Mouse:XButton1".</summary>
+    public string? PushToTalkKey { get; set; } = "Key:V";
+    public int PushToTalkPressDelayMs { get; set; } = 100;
+    public int PushToTalkReleaseDelayMs { get; set; } = 300;
+    public bool PushToTalkOnlyWhenCs2Focused { get; set; } = true;
+
     // Window / startup
     public bool MinimizeToTray { get; set; } = true;
     public bool CloseToTray { get; set; }
@@ -79,6 +87,8 @@ public sealed class AppSettings
         LocalVolume = Clamp(LocalVolume, 0, 2, 0.8);
         if (OutputLatencyMs < 10 || OutputLatencyMs > 200) OutputLatencyMs = 30;
         if (!Enum.IsDefined(PlaybackMode)) PlaybackMode = PlaybackMode.Overlap;
+        PushToTalkPressDelayMs = Math.Clamp(PushToTalkPressDelayMs, 0, 1000);
+        PushToTalkReleaseDelayMs = Math.Clamp(PushToTalkReleaseDelayMs, 0, 3000);
     }
 
     private static double Clamp(double v, double min, double max, double fallback)

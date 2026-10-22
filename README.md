@@ -131,6 +131,28 @@ Monitoring always plays on your listening device and never feeds back into the m
 - **Overlap, no duplicates**: different sounds overlap. Re-triggering a playing sound restarts it.
 - **Toggle**: pressing a playing sound's hotkey stops it. This works with any mode.
 
+### Automatic push-to-talk (Settings tab)
+If you use push-to-talk in CS2, teammates hear sound effects only while your voice key is held. With **Automatic push-to-talk** enabled, triggering a sound does the following:
+
+1. The app presses your CS2 push-to-talk key, for example `V`, or Mouse 4, Mouse 5 or the middle button.
+2. It waits **Delay before the sound starts**, 100 ms by default, so CS2 opens the microphone.
+3. It plays the sound. The key stays held while any soundboard sound plays, and further sounds extend the hold.
+4. It releases the key **Release after the sound ends** later, 300 ms by default, so the end of the sound is transmitted.
+
+How it behaves around your own key:
+- You can talk with your own key at any time. If you let go of it while a sound is still playing, the app keeps the key down until the sound ends.
+- If you are still holding your key when the sound ends, the app does not release it under you.
+- To do this, a small observe-only input hook watches **only** the push-to-talk key. It runs on its own thread and never blocks any other input.
+
+Safety:
+- **Only press the key when CS2 is the active window** is on by default. Triggering a sound while you are in Discord or a chat box therefore never types the key there.
+- No key is pressed for previews, when the soundboard is muted, when routing is off, or when a press only stops a playing sound in toggle mode.
+- The key is always released on stop, on exit, when the key is changed, and if the app crashes.
+- A soundboard hotkey that uses the push-to-talk key itself, such as `Ctrl+V` with push-to-talk on `V`, is refused. It would swallow the key before CS2 sees it.
+- The key is sent as a hardware scan code, which is what games read.
+
+If CS2 runs **as administrator**, run the soundboard as administrator too. Windows blocks simulated input from a normal program into an elevated one.
+
 ### System tray
 - Minimize or close to the tray, depending on your settings. Mic passthrough and hotkeys keep working.
 - Tray menu items:
@@ -237,7 +259,7 @@ Estimated added latency with the defaults is about 80 ms: capture block, jitter 
 ## Tests
 
 ```powershell
-dotnet test tests/CS2Soundboard.Tests --filter "Category!=Hardware"   # 40 offline tests
+dotnet test tests/CS2Soundboard.Tests --filter "Category!=Hardware"   # 54 offline tests
 dotnet test tests/CS2Soundboard.Tests --filter "Category=Hardware"    # 5 tests against real devices (needs VB-CABLE + a mic)
 ```
 
@@ -273,6 +295,16 @@ The hardware tests use the real microphone, `CABLE Input` and `CABLE Output`. Th
 | Configured output missing | clear error, no fallback device opened |
 | Start, stop, restart | devices released and re-opened cleanly |
 
+Automatic push-to-talk was tested with real Windows input in an isolated app instance. F24 stood in for the voice key, and the system key state was sampled every 5 ms:
+
+| Case | Observed |
+|---|---|
+| 1.0 s sound | key down 22 ms after the hotkey, sound about 100 ms later, key up at 1.5 s (sound + latency + 300 ms tail) |
+| User taps the key mid-sound (300–500 ms) | the user's release was held back; key up at 1.46 s when the sound ended |
+| User still holding when the sound ends, released at 2.0 s | the app did not release it; key up exactly when the user let go |
+
+The press/hold/release logic is also unit-tested, covering stacked sounds, key changes while held, and the user already talking. Mouse-button push-to-talk is unit-tested but was not exercised with real input.
+
 A GUI smoke test was also run with a sandboxed settings folder:
 - The app started hidden in the tray.
 - Global hotkeys played a sound twice while the app was hidden, reported a missing file, and stopped all sounds.
@@ -289,6 +321,8 @@ A GUI smoke test was also run with a sandboxed settings folder:
 - Shared-mode WASAPI only. A device held in exclusive mode by another app cannot be opened, and the error says so.
 - Files up to 90 s are pre-decoded into memory, with a 512 MB budget. Longer files are streamed from disk.
 - FLAC, M4A/AAC and WMA depend on the Windows Media Foundation codecs installed.
+- Automatic push-to-talk uses simulated input. It is the same mechanism other soundboards use for this feature, and it does not touch the game's memory. Whether any game or anti-cheat accepts simulated input is up to that game.
+- If the user still holds the modifiers of a soundboard hotkey, such as `Ctrl` in `Ctrl+Alt+1`, when push-to-talk is pressed, the game also sees those keys. In CS2, `Ctrl` is crouch by default. Numpad or F13–F24 hotkeys avoid this.
 - Sound files are not resampled to a different pitch or speed. Effects such as EQ or pitch shift are not provided.
 
 ## Troubleshooting
@@ -304,5 +338,7 @@ A GUI smoke test was also run with a sandboxed settings folder:
 | Crackling or dropouts | Raise **Output buffer** to 50–80 ms. Disable "Allow applications to take exclusive control" on CABLE Input/Output and on the mic (device Properties → Advanced). Check the underrun counter under Technical details. |
 | Echo while monitoring | Use headphones, or set monitoring to **Off**. |
 | Hotkey shows a red ⚠ | Another application already owns that combination. Hover for details and choose another. |
+| Automatic push-to-talk does nothing in CS2 | Check that the key matches your CS2 voice key. Make sure CS2 is the active window, or untick the CS2-only option. If CS2 runs as administrator, run the soundboard as administrator too. |
+| Start or end of the sound is cut with push-to-talk | Raise *Delay before the sound starts* or *Release after the sound ends*. |
 | A sound shows **Error** | Hover the status for the decoder message. Convert the file to WAV, MP3 or OGG. |
 | `.exe` built with `dotnet build` says ".NET must be installed" | Your system-wide .NET is older than 10. Use the self-contained `publish.ps1` build, or install the .NET 10 Desktop Runtime. |

@@ -64,9 +64,15 @@
                 <TextBlock Grid.Column="3" Text="Mixed output" VerticalAlignment="Center" Margin="8,0,8,0" Foreground="{StaticResource SubtleTextBrush}" />
                 <ProgressBar Grid.Column="4" Style="{StaticResource Meter}" Value="{Binding OutputLevel, Mode=OneWay}" VerticalAlignment="Center" />
                 <TextBlock Grid.Column="5" Text="{Binding OutputLevelText}" Margin="8,0" VerticalAlignment="Center" FontSize="11" Foreground="{StaticResource SubtleTextBrush}" />
-                <TextBlock Grid.Column="6" VerticalAlignment="Center" HorizontalAlignment="Right" TextTrimming="CharacterEllipsis">
-                    <Run Text="Now playing: " Foreground="{StaticResource SubtleTextBrush}" /><Run Text="{Binding NowPlaying, Mode=OneWay}" FontWeight="SemiBold" />
-                </TextBlock>
+                <StackPanel Grid.Column="6" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <Border Background="#FFF7ED" BorderBrush="{StaticResource AccentBrush}" BorderThickness="1" CornerRadius="10" Padding="8,1" Margin="0,0,12,0"
+                            Visibility="{Binding PushToTalkHolding, Converter={StaticResource BoolVis}}">
+                        <TextBlock Text="{Binding PushToTalkStatus}" Foreground="{StaticResource AccentHoverBrush}" FontWeight="SemiBold" FontSize="12" />
+                    </Border>
+                    <TextBlock TextTrimming="CharacterEllipsis">
+                        <Run Text="Now playing: " Foreground="{StaticResource SubtleTextBrush}" /><Run Text="{Binding NowPlaying, Mode=OneWay}" FontWeight="SemiBold" />
+                    </TextBlock>
+                </StackPanel>
             </Grid>
         </Border>
 
@@ -582,6 +588,56 @@
                                           Content="Pressing the hotkey of a sound that is already playing stops it (toggle)" />
                                 <CheckBox IsChecked="{Binding HearSoundsLocally}"
                                           Content="Also play triggered sounds on my listening device, so I hear them too" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <Grid>
+                                    <TextBlock Style="{StaticResource SectionTitle}" Text="Automatic push-to-talk" />
+                                    <CheckBox HorizontalAlignment="Right" IsChecked="{Binding AutoPushToTalk}" FontWeight="SemiBold"
+                                              Content="Hold my push-to-talk key while sounds play" />
+                                </Grid>
+                                <TextBlock Style="{StaticResource Subtle}" Margin="0,0,0,12">
+                                    If you use push-to-talk in CS2, teammates only hear sounds while the voice key is held. With this enabled, a soundboard hotkey
+                                    first presses your push-to-talk key, waits briefly so CS2 opens the microphone, plays the sound, and releases the key shortly
+                                    after the last sound ends. You can still talk with your own key at any time; it is never cut off.
+                                </TextBlock>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="220" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="40" />
+                                        <RowDefinition Height="40" />
+                                        <RowDefinition Height="40" />
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Text="Push-to-talk key in CS2" VerticalAlignment="Center" />
+                                    <Button Grid.Column="1" MinWidth="160" VerticalAlignment="Center" Content="{Binding PushToTalkKeyText}" FontWeight="SemiBold"
+                                            Command="{Binding AssignPushToTalkKeyCommand}" ToolTip="Click, then press your CS2 voice key (or click Mouse 4/5/middle)" />
+                                    <TextBlock Grid.Column="2" Style="{StaticResource Subtle}" VerticalAlignment="Center" Margin="12,0,0,0" FontSize="11"
+                                               Text="Must match the key bound to voice chat (push-to-talk) in the CS2 keyboard settings." />
+
+                                    <TextBlock Grid.Row="1" Text="Delay before the sound starts" VerticalAlignment="Center" />
+                                    <ComboBox Grid.Row="1" Grid.Column="1" Width="160" HorizontalAlignment="Left" VerticalAlignment="Center"
+                                              ItemsSource="{Binding PushToTalkPressDelayOptions}" SelectedItem="{Binding PushToTalkPressDelayMs}" ItemStringFormat="{}{0} ms" />
+                                    <TextBlock Grid.Row="1" Grid.Column="2" Style="{StaticResource Subtle}" VerticalAlignment="Center" Margin="12,0,0,0" FontSize="11"
+                                               Text="Gives CS2 time to open the mic so the start of the sound is not cut. Increase if the beginning is missing." />
+
+                                    <TextBlock Grid.Row="2" Text="Release after the sound ends" VerticalAlignment="Center" />
+                                    <ComboBox Grid.Row="2" Grid.Column="1" Width="160" HorizontalAlignment="Left" VerticalAlignment="Center"
+                                              ItemsSource="{Binding PushToTalkReleaseDelayOptions}" SelectedItem="{Binding PushToTalkReleaseDelayMs}" ItemStringFormat="{}{0} ms" />
+                                    <TextBlock Grid.Row="2" Grid.Column="2" Style="{StaticResource Subtle}" VerticalAlignment="Center" Margin="12,0,0,0" FontSize="11"
+                                               Text="Keeps the mic open briefly so the end of the sound is transmitted. Increase if the end is cut off." />
+                                </Grid>
+                                <CheckBox Margin="0,8,0,0" IsChecked="{Binding PushToTalkOnlyWhenCs2Focused}"
+                                          Content="Only press the key when CS2 is the active window (prevents typing it into chat or other apps)" />
+                                <TextBlock Margin="0,6,0,0" Foreground="{StaticResource WarnBrush}" TextWrapping="Wrap" Text="{Binding PushToTalkHookWarning}"
+                                           Visibility="{Binding PushToTalkHookWarning, Converter={StaticResource NotEmptyVis}}" />
+                                <TextBlock Style="{StaticResource Subtle}" Margin="0,6,0,0" FontSize="11"
+                                           Text="Tip: if CS2 runs as administrator, run the soundboard as administrator too; Windows blocks simulated key presses into elevated programs." />
                             </StackPanel>
                         </Border>
 

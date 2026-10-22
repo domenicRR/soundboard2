@@ -194,6 +194,10 @@ public sealed class PlaybackController
         while (bus.Finished.TryDequeue(out var v)) v.Dispose();
     }
 
+    /// <summary>True while any soundboard sound (not previews or test tones) is playing into the virtual mic.</summary>
+    public bool HasActiveMixVoices()
+        => _active.Any(a => !a.IsLocal && !a.IsPreview && !a.Voice.IsFinished && !a.Key.StartsWith("__", StringComparison.Ordinal));
+
     /// <summary>The most recent non-preview sound still playing, for "Now playing" displays.</summary>
     public IEnumerable<string> NowPlayingNames()
         => _active.Where(a => !a.IsPreview && !a.IsLocal && !a.Voice.IsFinished && a.Voice.FadeRemaining < 0)

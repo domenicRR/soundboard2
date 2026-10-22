@@ -30,16 +30,19 @@ public partial class App : Application
         base.OnStartup(e);
 
         // Single instance: two copies would fight over hotkeys and audio devices.
-        _mutex = new Mutex(true, MutexName, out bool createdNew);
+        // With a test settings override (CS2SB_SETTINGS_DIR), the lock is scoped to that folder so an
+        // isolated test copy can run next to the normal one.
+        string scope = InstanceScope();
+        _mutex = new Mutex(true, MutexName + scope, out bool createdNew);
         if (!createdNew)
         {
-            try { EventWaitHandle.OpenExisting(ShowEventName).Set(); } catch { /* first instance not ready */ }
+            try { EventWaitHandle.OpenExisting(ShowEventName + scope).Set(); } catch { /* first instance not ready */ }
             _mutex.Dispose();
             _mutex = null;
             Shutdown();
             return;
         }
-        _showEvent = new EventWaitHandle(false, EventResetMode.AutoReset, ShowEventName);
+        _showEvent = new EventWaitHandle(false, EventResetMode.AutoReset, ShowEventName + scope);
         var listener = new Thread(() =>
         {
             while (_showEvent.WaitOne())
@@ -61,7 +64,11 @@ public partial class App : Application
                 "CS2 Soundboard", MessageBoxButton.OK, MessageBoxImage.Error);
             args.Handled = true;
         };
-        AppDomain.CurrentDomain.UnhandledException += (_, args) => Log.Error("Unhandled exception", args.ExceptionObject as Exception);
+        AppDomain.CurrentDomain.UnhandledException += (_, args) =>
+        {
+            PushToTalkService.EmergencyRelease(); // never leave the game's voice key held down
+            Log.Error("Unhandled exception", args.ExceptionObject as Exception);
+        };
         TaskScheduler.UnobservedTaskException += (_, args) =>
         {
             Log.Error("Unobserved task exception", args.Exception);
@@ -113,6 +120,14 @@ public partial class App : Application
             Log.Error("Initialization failed", ex);
             MessageBox.Show($"Initialization failed: {ex.Message}", "CS2 Soundboard", MessageBoxButton.OK, MessageBoxImage.Error);
         }
+    }
+
+    private static string InstanceScope()
+    {
+        var dir = Environment.GetEnvironmentVariable("CS2SB_SETTINGS_DIR");
+        if (string.IsNullOrWhiteSpace(dir)) return "";
+        var hash = System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(dir.Trim().ToLowerInvariant()));
+        return "." + Convert.ToHexString(hash, 0, 8);
     }
 
     /// <summary>Stops audio, releases devices and hotkeys, saves settings and exits.</summary>
